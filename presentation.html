@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프롬프트 1도 몰랐던 PM의 AI 도전기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --grad1: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    --grad2: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --grad3: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --grad4: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --grad5: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --grad6: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --accent: #a78bfa;
+    --accent2: #60a5fa;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --card-bg: rgba(255,255,255,0.05);
+    --card-border: rgba(255,255,255,0.1);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #0f0c29;
+    overflow: hidden;
+  }
+
+  /* ── 슬라이드 컨테이너 ── */
+  .deck {
+    width: 100vw; height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transform: translateX(60px);
+    transition: opacity .5s ease, transform .5s ease;
+    pointer-events: none;
+  }
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: all;
+  }
+  .slide.exit-left {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+
+  /* ── 배경 공통 ── */
+  .slide { background: var(--grad1); }
+
+  /* ── 네비 ── */
+  .nav {
+    position: fixed;
+    bottom: 32px; left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50px;
+    padding: 10px 24px;
+  }
+  .nav button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 20px;
+    transition: color .2s;
+    line-height: 1;
+    padding: 4px 8px;
+  }
+  .nav button:hover { color: var(--accent); }
+  .nav .counter {
+    color: var(--text-secondary);
+    font-size: 13px;
+    min-width: 48px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .dot-nav {
+    position: fixed;
+    right: 28px; top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    cursor: pointer;
+    transition: all .3s;
+  }
+  .dot.active {
+    background: var(--accent);
+    transform: scale(1.4);
+  }
+
+  /* ── 공통 타이포 ── */
+  .tag {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    opacity: .8;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+  h1 { font-size: clamp(36px, 5vw, 64px); font-weight: 900; line-height: 1.15; }
+  h2 { font-size: clamp(24px, 3vw, 38px); font-weight: 700; line-height: 1.3; color: var(--text-primary); }
+  h3 { font-size: clamp(16px, 2vw, 22px); font-weight: 700; color: var(--text-primary); }
+  p  { font-size: clamp(13px, 1.4vw, 16px); color: var(--text-secondary); line-height: 1.8; }
+
+  .grad-text {
+    background: var(--grad2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .grad-text-pink {
+    background: var(--grad3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .grad-text-cyan {
+    background: var(--grad4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── 카드 ── */
+  .glass-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    padding: 28px 32px;
+  }
+  .glass-card:hover {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(167,139,250,0.3);
+    transition: all .3s;
+  }
+
+  /* ── 인사이트 박스 ── */
+  .insight {
+    background: linear-gradient(135deg, rgba(167,139,250,0.15), rgba(96,165,250,0.15));
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 16px;
+    padding: 20px 28px;
+  }
+  .insight p { color: var(--text-primary); font-size: 15px; }
+
+  /* ══════════════════════════════════════
+     슬라이드 1 — 표지
+  ══════════════════════════════════════ */
+  #s1 {
+    background: var(--grad1);
+    align-items: flex-start;
+  }
+  #s1 .particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  #s1 .particles span {
+    position: absolute;
+    border-radius: 50%;
+    opacity: .15;
+    animation: float 8s infinite ease-in-out;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-30px) scale(1.1); }
+  }
+  #s1 .content { position: relative; z-index: 1; max-width: 800px; }
+  #s1 .stats {
+    display: flex; gap: 32px; margin-top: 40px;
+  }
+  #s1 .stat-item {
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  #s1 .stat-num {
+    font-size: 28px; font-weight: 900;
+    background: var(--grad4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  #s1 .stat-label { font-size: 12px; color: var(--text-secondary); }
+
+  /* ══════════════════════════════════════
+     슬라이드 2 — Before/After
+  ══════════════════════════════════════ */
+  #s2 { background: linear-gradient(135deg, #0f0c29 0%, #1a1040 100%); }
+  #s2 .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+    max-width: 1100px;
+  }
+  #s2 .before-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 32px;
+  }
+  #s2 .after-card {
+    background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12));
+    border: 1px solid rgba(102,126,234,0.3);
+    border-radius: 20px;
+    padding: 32px;
+  }
+  #s2 .badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 16px;
+  }
+  #s2 .badge.before { background: rgba(255,255,255,0.1); color: #94a3b8; }
+  #s2 .badge.after  { background: rgba(102,126,234,0.3); color: #a78bfa; }
+  #s2 .img-placeholder {
+    width: 100%; height: 140px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    margin-top: 16px;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  #s2 .img-placeholder.before-ph {
+    background: rgba(255,255,255,0.05);
+    border: 2px dashed rgba(255,255,255,0.15);
+    color: #64748b;
+  }
+  #s2 .img-placeholder.after-ph {
+    background: linear-gradient(135deg, rgba(102,126,234,0.15), rgba(118,75,162,0.15));
+    border: 2px dashed rgba(102,126,234,0.4);
+    color: #a78bfa;
+  }
+  #s2 .img-placeholder:hover { transform: scale(1.02); }
+
+  /* ══════════════════════════════════════
+     슬라이드 3 — 시작
+  ══════════════════════════════════════ */
+  #s3 { background: linear-gradient(135deg, #0f0c29, #1e1b4b); }
+  #s3 .steps {
+    display: flex; flex-direction: column;
+    gap: 16px; width: 100%; max-width: 900px; margin-top: 32px;
+  }
+  #s3 .step {
+    display: flex; align-items: flex-start; gap: 20px;
+    padding: 20px 24px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  #s3 .step:hover { transform: translateX(8px); }
+  #s3 .step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; flex-shrink: 0;
+  }
+  #s3 .step:nth-child(1) { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  #s3 .step:nth-child(2) { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+  #s3 .step:nth-child(3) { background: rgba(245,87,108,0.1); border: 1px solid rgba(245,87,108,0.25); }
+  #s3 .step:nth-child(1) .step-num { background: var(--grad2); color: white; }
+  #s3 .step:nth-child(2) .step-num { background: var(--grad4); color: white; }
+  #s3 .step:nth-child(3) .step-num { background: var(--grad3); color: white; }
+  #s3 .warning-box {
+    width: 100%; max-width: 900px;
+    background: linear-gradient(135deg, rgba(245,87,108,0.12), rgba(240,147,251,0.12));
+    border: 1px solid rgba(245,87,108,0.3);
+    border-radius: 14px;
+    padding: 16px 24px;
+    margin-top: 12px;
+  }
+
+  /* ══════════════════════════════════════
+     슬라이드 4 — 극복 ① 지침
+  ══════════════════════════════════════ */
+  #s4 { background: linear-gradient(135deg, #0f0c29, #0d1b2a); }
+  #s4 .timeline {
+    display: flex; align-items: center;
+    gap: 0; width: 100%; max-width: 1000px;
+    margin: 24px 0;
+  }
+  #s4 .ver-node {
+    flex: 1;
+    display: flex; flex-direction: column; align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+  #s4 .ver-node::after {
+    content: '';
+    position: absolute;
+    right: -2px; top: 18px;
+    width: calc(100% - 60px);
+    height: 2px;
+    background: linear-gradient(90deg, rgba(167,139,250,0.4), rgba(96,165,250,0.4));
+    left: calc(50% + 28px);
+  }
+  #s4 .ver-node:last-child::after { display: none; }
+  #s4 .ver-circle {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+    transition: transform .3s;
+    cursor: default;
+  }
+  #s4 .ver-circle:hover { transform: scale(1.15); }
+  #s4 .ver-label { font-size: 11px; color: var(--text-secondary); text-align: center; line-height: 1.4; }
+  #s4 .flow-row {
+    display: flex; align-items: center;
+    gap: 8px; width: 100%; max-width: 1000px;
+    flex-wrap: wrap;
+  }
+  #s4 .flow-item {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 16px;
+    text-align: center;
+    min-width: 180px;
+  }
+  #s4 .flow-arrow { color: var(--accent); font-size: 18px; flex-shrink: 0; }
+
+  /* ══════════════════════════════════════
+     슬라이드 5 — 극복 ② Few-Shot
+  ══════════════════════════════════════ */
+  #s5 { background: linear-gradient(135deg, #0f0c29, #1a0533); }
+  #s5 .compare {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%; max-width: 1100px;
+    margin-top: 24px;
+  }
+  #s5 .ex-card {
+    border-radius: 20px;
+    padding: 28px 32px;
+  }
+  #s5 .ex-card.bad {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+  #s5 .ex-card.good {
+    background: linear-gradient(135deg, rgba(240,147,251,0.08), rgba(245,87,108,0.08));
+    border: 1px solid rgba(240,147,251,0.25);
+  }
+  #s5 .quote {
+    font-size: 14px;
+    line-height: 1.9;
+    padding: 16px 20px;
+    border-radius: 12px;
+    margin-top: 12px;
+    font-style: italic;
+  }
+  #s5 .quote.bad  { background: rgba(255,255,255,0.04); color: #64748b; }
+  #s5 .quote.good { background: rgba(240,147,251,0.08); color: #e2d4f0; }
+  #s5 .verdict {
+    display: inline-block;
+    margin-top: 12px;
+    font-size: 12px; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px;
+  }
+  #s5 .verdict.bad  { background: rgba(255,255,255,0.08); color: #64748b; }
+  #s5 .verdict.good { background: rgba(240,147,251,0.2); color: #f0abfc; }
+
+  /* ══════════════════════════════════════
+     슬라이드 6 — 극복 ③ RAG
+  ══════════════════════════════════════ */
+  #s6 { background: linear-gradient(135deg, #0f0c29, #001a1a); }
+  #s6 .rag-layout {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    width: 100%; max-width: 1000px;
+    margin-top: 24px;
+  }
+  #s6 .rag-arrow {
+    font-size: 32px; color: var(--accent);
+    text-align: center;
+  }
+  #s6 .list-cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 16px; width: 100%; max-width: 1000px;
+    margin-top: 20px;
+  }
+  #s6 .list-card {
+    border-radius: 16px; padding: 22px 24px;
+  }
+  #s6 .list-card.white-list {
+    background: linear-gradient(135deg, rgba(67,233,123,0.08), rgba(56,249,215,0.08));
+    border: 1px solid rgba(67,233,123,0.25);
+  }
+  #s6 .list-card.gray-list {
+    background: linear-gradient(135deg, rgba(250,112,154,0.08), rgba(254,225,64,0.08));
+    border: 1px solid rgba(250,112,154,0.25);
+  }
+  #s6 .list-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  #s6 .list-card.white-list .list-title { color: #6ee7b7; }
+  #s6 .list-card.gray-list  .list-title { color: #fca5a5; }
+  #s6 .rule-badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 20px;
+    margin-top: 8px;
+  }
+  #s6 .list-card.white-list .rule-badge { background: rgba(67,233,123,0.2); color: #6ee7b7; }
+  #s6 .list-card.gray-list  .rule-badge { background: rgba(250,112,154,0.2); color: #fca5a5; }
+
+  /* ══════════════════════════════════════
+     슬라이드 7 — 결과
+  ══════════════════════════════════════ */
+  #s7 { background: linear-gradient(135deg, #0f0c29, #1e0533); }
+  #s7 .metrics {
+    display: flex; gap: 32px;
+    width: 100%; max-width: 1000px;
+    margin: 24px 0;
+  }
+  #s7 .metric-card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 28px 24px;
+    text-align: center;
+    transition: all .3s;
+  }
+  #s7 .metric-card:hover {
+    border-color: rgba(167,139,250,0.4);
+    background: rgba(167,139,250,0.06);
+    transform: translateY(-4px);
+  }
+  #s7 .metric-num {
+    font-size: 48px; font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  #s7 .metric-label { font-size: 13px; color: var(--text-secondary); }
+  #s7 .example-cards {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; width: 100%; max-width: 1000px;
+  }
+  #s7 .ex {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 22px 24px;
+  }
+  #s7 .ex-name {
+    font-size: 14px; font-weight: 700; margin-bottom: 10px;
+  }
+  #s7 .ex-text {
+    font-size: 13px; color: #94a3b8; line-height: 1.8;
+  }
+  #s7 .screenshot-ph {
+    width: 100%; height: 120px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 2px dashed rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; color: #475569;
+    cursor: pointer;
+    transition: all .3s;
+  }
+  #s7 .screenshot-ph:hover { border-color: rgba(167,139,250,0.3); color: #a78bfa; }
+
+  /* ══════════════════════════════════════
+     슬라이드 8 — 마무리
+  ══════════════════════════════════════ */
+  #s8 { background: var(--grad1); }
+  #s8 .cards {
+    display: flex; gap: 20px;
+    width: 100%; max-width: 1000px;
+    margin: 28px 0;
+  }
+  #s8 .card {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 28px 24px;
+    transition: all .3s;
+  }
+  #s8 .card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(167,139,250,0.35);
+  }
+  #s8 .card-num {
+    font-size: 36px; font-weight: 900;
+    line-height: 1; margin-bottom: 12px;
+  }
+  #s8 .card-title { font-size: 16px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+  #s8 .card-desc  { font-size: 13px; color: var(--text-secondary); line-height: 1.8; }
+  #s8 .final-msg {
+    text-align: center;
+    padding: 24px 40px;
+    background: linear-gradient(135deg, rgba(102,126,234,0.12), rgba(118,75,162,0.12));
+    border: 1px solid rgba(102,126,234,0.2);
+    border-radius: 20px;
+    width: 100%; max-width: 1000px;
+  }
+
+  /* ── 팝업 모달 ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .modal-overlay.show { opacity: 1; pointer-events: all; }
+  .modal {
+    background: linear-gradient(135deg, #1e1b4b, #0f172a);
+    border: 1px solid rgba(167,139,250,0.3);
+    border-radius: 24px;
+    padding: 40px 48px;
+    max-width: 560px; width: 90%;
+    transform: scale(.92);
+    transition: transform .3s;
+  }
+  .modal-overlay.show .modal { transform: scale(1); }
+  .modal h3 { font-size: 20px; color: var(--text-primary); margin-bottom: 16px; }
+  .modal p  { font-size: 14px; color: var(--text-secondary); line-height: 1.8; }
+  .modal .close-btn {
+    margin-top: 24px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none; border-radius: 12px;
+    padding: 10px 28px;
+    color: white; font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  .modal .close-btn:hover { opacity: .85; }
+
+  /* ── 키보드 힌트 ── */
+  .key-hint {
+    position: fixed; top: 24px; right: 24px;
+    font-size: 11px; color: rgba(255,255,255,0.2);
+    letter-spacing: 1px;
+  }
+
+  /* ── 슬라이드 제목 공통 래퍼 ── */
+  .slide-header { width: 100%; max-width: 1100px; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ══ 슬라이드 1 — 표지 ══ -->
+  <div class="slide active" id="s1">
+    <div class="particles" aria-hidden="true">
+      <span style="width:300px;height:300px;background:radial-gradient(circle,#667eea,transparent);top:-80px;right:-60px;animation-delay:0s"></span>
+      <span style="width:200px;height:200px;background:radial-gradient(circle,#f093fb,transparent);bottom:60px;left:80px;animation-delay:2s"></span>
+      <span style="width:150px;height:150px;background:radial-gradient(circle,#4facfe,transparent);bottom:100px;right:200px;animation-delay:4s"></span>
+    </div>
+    <div class="content">
+      <div class="tag">PM의 AI 도전기</div>
+      <h1 style="color:white;">
+        프롬프트 <span class="grad-text">1도 몰랐던</span> PM이<br>
+        <span class="grad-text-pink">식당 요약문</span>을 만들기까지
+      </h1>
+      <p style="margin-top:20px;font-size:16px;max-width:600px;">
+        할루시네이션 지옥을 헤쳐나온 좌충우돌 프롬프트 엔지니어링 이야기
+      </p>
+      <div class="stats">
+        <div class="stat-item">
+          <span class="stat-num">V1.48</span>
+          <span class="stat-label">최종 배포 버전</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" style="background:var(--grad3);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">7회</span>
+          <span class="stat-label">QA 진행</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num" style="background:var(--grad5);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">7,780개</span>
+          <span class="stat-label">매장 커버리지</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 2 — Before/After ══ -->
+  <div class="slide" id="s2">
+    <div class="slide-header">
+      <div class="tag">Result First</div>
+      <h2>먼저 결과물부터 보여드릴게요</h2>
+    </div>
+    <div class="compare">
+      <div class="before-card">
+        <span class="badge before">BEFORE</span>
+        <h3>기존</h3>
+        <p style="margin-top:10px;">매장 정보를 하나하나 직접 탐색해야 했어요.<br>리뷰를 읽고, 메뉴를 확인하고, 특징을 직접 파악해야 했죠.</p>
+        <div class="img-placeholder before-ph" onclick="openModal('before')">
+          📷 스크린샷 자리 클릭
+        </div>
+      </div>
+      <div class="after-card">
+        <span class="badge after">AFTER</span>
+        <h3 class="grad-text">AI 요약 도입 후</h3>
+        <p style="margin-top:10px;">AI가 매장 특징을 3줄로 요약해줘요.<br>검색할 때 한눈에 이 매장의 핵심을 파악할 수 있어요.</p>
+        <div class="img-placeholder after-ph" onclick="openModal('after')">
+          📷 스크린샷 자리 클릭
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:16px;font-size:12px;opacity:.5;">캐치테이블 매장상세 상단 — AI가 리뷰와 매장 정보를 기반으로 요약합니다</p>
+  </div>
+
+  <!-- ══ 슬라이드 3 — 시작 ══ -->
+  <div class="slide" id="s3">
+    <div class="slide-header">
+      <div class="tag">Chapter 1</div>
+      <h2>처음엔 정말 아무것도 몰랐어요</h2>
+    </div>
+    <div class="steps">
+      <div class="step" onclick="openModal('step1')">
+        <div class="step-num">①</div>
+        <div>
+          <h3 style="font-size:15px;">ChatGPT, Gemini 웹에서 이것저것 쳐봄</h3>
+          <p style="font-size:13px;margin-top:4px;">"일단 붙여넣고 돌려봤어요. 뭔가 나오긴 하더라고요."</p>
+        </div>
+      </div>
+      <div class="step" onclick="openModal('step2')">
+        <div class="step-num">②</div>
+        <div>
+          <h3 style="font-size:15px;">40개 매장 — 직접 쓴 것 vs AI 생성 AB테스트</h3>
+          <p style="font-size:13px;margin-top:4px;">"어떤 게 더 좋은지 직접 비교해봤어요."</p>
+        </div>
+      </div>
+      <div class="step" onclick="openModal('hallucination')">
+        <div class="step-num">③</div>
+        <div>
+          <h3 style="font-size:15px;color:#fca5a5;">결과: 할루시네이션 지옥</h3>
+          <p style="font-size:13px;margin-top:4px;">"없는 메뉴를 만들어내고, 없는 수상 이력을 붙여줬어요." → 클릭해서 보기</p>
+        </div>
+      </div>
+    </div>
+    <div class="warning-box">
+      <p style="color:#fca5a5;font-size:14px;font-weight:600;">⚠️ 웹 기반 프롬프팅의 한계 — 데이터 없이 '그럴듯하게' 지어낸다</p>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 4 — 극복 ① 지침 ══ -->
+  <div class="slide" id="s4">
+    <div class="slide-header">
+      <div class="tag">극복 ①</div>
+      <h2>지침을 짜다, 그리고 <span class="grad-text-cyan">깎아냈다</span></h2>
+    </div>
+    <div class="timeline">
+      <div class="ver-node">
+        <div class="ver-circle" style="background:rgba(255,255,255,0.1);">V1.0</div>
+        <div class="ver-label">조합 & 워싱<br>초안</div>
+      </div>
+      <div class="ver-node">
+        <div class="ver-circle" style="background:linear-gradient(135deg,#667eea44,#764ba244);">V1.3</div>
+        <div class="ver-label">QA 이슈<br>수정</div>
+      </div>
+      <div class="ver-node">
+        <div class="ver-circle" style="background:linear-gradient(135deg,#667eea88,#764ba288);">V1.42</div>
+        <div class="ver-label">카피라이터<br>톤 강화</div>
+      </div>
+      <div class="ver-node">
+        <div class="ver-circle" style="background:linear-gradient(135deg,#667eeabb,#764ba2bb);">V1.47</div>
+        <div class="ver-label">엄격한<br>편집자 추가</div>
+      </div>
+      <div class="ver-node">
+        <div class="ver-circle" style="background:var(--grad2);">V1.48</div>
+        <div class="ver-label" style="color:#a78bfa;font-weight:700;">최종<br>배포 ✓</div>
+      </div>
+    </div>
+    <div class="flow-row">
+      <div class="flow-item">
+        <p style="font-size:12px;color:#a78bfa;font-weight:600;">강조 추가</p>
+        <p style="font-size:12px;margin-top:6px;">"중요한 건 대문자로, 절대 하지 마라고 명시"</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item">
+        <p style="font-size:12px;color:#a78bfa;font-weight:600;">절대지침 추가</p>
+        <p style="font-size:12px;margin-top:6px;">"예외 없는 규칙들을 계속 추가"</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item" style="border-color:rgba(245,87,108,0.3);">
+        <p style="font-size:12px;color:#fca5a5;font-weight:600;">지침이 너무 길어짐</p>
+        <p style="font-size:12px;margin-top:6px;">"오히려 결과가 무너지기 시작"</p>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-item" style="border-color:rgba(67,233,123,0.3);">
+        <p style="font-size:12px;color:#6ee7b7;font-weight:600;">핵심만 남기기</p>
+        <p style="font-size:12px;margin-top:6px;">"불필요한 지침을 다 쳐냈어요"</p>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:16px;width:100%;max-width:1000px;">
+      <p>💡 <strong style="color:#a78bfa;">지침이 길수록 AI는 혼란스러워한다</strong> — 핵심만 남기는 편집이 곧 프롬프트 실력이다</p>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 5 — 극복 ② Few-Shot ══ -->
+  <div class="slide" id="s5">
+    <div class="slide-header">
+      <div class="tag">극복 ②</div>
+      <h2>원하는 스타일을 예시로 직접 보여줬어요 — <span class="grad-text-pink">Few-Shot Learning</span></h2>
+    </div>
+    <p style="width:100%;max-width:1100px;margin-top:8px;">"이렇게 써줘" 보다 &nbsp;<strong style="color:#f0abfc;">"이런 느낌으로 써줘 + 예시"</strong>&nbsp; 가 훨씬 강력하다</p>
+    <div class="compare">
+      <div class="ex-card bad">
+        <span class="verdict bad">Few-Shot 전</span>
+        <div class="quote bad">
+          "강민구 셰프의 미쉐린 3스타 레스토랑으로<br>
+          한식을 현대적으로 재해석한 메뉴를 제공합니다."
+        </div>
+        <span class="verdict bad">정보는 맞는데 — 읽고 싶지 않음 😐</span>
+      </div>
+      <div class="ex-card good">
+        <span class="verdict good">Few-Shot 후</span>
+        <div class="quote good">
+          "국내 유일 3스타의 영예를 안은 모던 한식 다이닝<br><br>
+          고추장을 WAN 디저트로 풀어낸 '트리오'와<br>
+          최상급 재료의 맛을 살린 스테이크는 선호도가 높아요.<br><br>
+          채광이 차분한 공간에서 소믈리에가 엄선한 페어링을 더해보세요."
+        </div>
+        <span class="verdict good">캐치테이블 감성 — 읽고 싶어짐 ✨</span>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:16px;width:100%;max-width:1100px;">
+      <p>💡 <strong style="color:#f0abfc;">예시 하나가 설명 열 줄보다 낫다</strong></p>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 6 — 극복 ③ RAG ══ -->
+  <div class="slide" id="s6">
+    <div class="slide-header">
+      <div class="tag">극복 ③</div>
+      <h2>내부 데이터를 지침에 직접 연결했어요 — <span class="grad-text-cyan">RAG</span></h2>
+    </div>
+    <div class="rag-layout">
+      <div class="glass-card">
+        <p style="color:#fca5a5;font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">문제</p>
+        <h3 style="font-size:15px;">웹 기반 AI</h3>
+        <p style="margin-top:8px;">인터넷에서 '그럴듯한 것'을 가져옴<br>→ 없는 정보를 지어냄 (할루시네이션)</p>
+      </div>
+      <div class="rag-arrow">→</div>
+      <div class="glass-card" style="background:linear-gradient(135deg,rgba(67,233,123,0.07),rgba(56,249,215,0.07));border-color:rgba(67,233,123,0.2);">
+        <p style="color:#6ee7b7;font-size:12px;font-weight:700;letter-spacing:2px;margin-bottom:12px;">해결</p>
+        <h3 style="font-size:15px;">내부 DB 기반 RAG 도입</h3>
+        <p style="margin-top:8px;">실제 리뷰 / 매장정보 / 메뉴 데이터만<br>지침에 직접 넣어줌</p>
+      </div>
+    </div>
+    <div class="list-cards">
+      <div class="list-card white-list">
+        <div class="list-title">⬜ White List</div>
+        <p style="font-size:13px;">매장정보 · 매장소개 · 미쉐린</p>
+        <p style="font-size:13px;margin-top:6px;">공식 데이터는 신뢰 가능 → 창의적으로 가공해도 OK</p>
+        <span class="rule-badge">카피라이터 모드</span>
+      </div>
+      <div class="list-card gray-list">
+        <div class="list-title">🔲 Gray List</div>
+        <p style="font-size:13px;">리뷰 내용</p>
+        <p style="font-size:13px;margin-top:6px;">사람마다 다를 수 있음 → 3회 이상 언급된 것만 사용</p>
+        <span class="rule-badge">편집자 모드 — Rule of 3</span>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:14px;width:100%;max-width:1000px;">
+      <p>💡 <strong style="color:#6ee7b7;">"있는 것만 써라"</strong> — 이 한 줄이 핵심이었어요</p>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 7 — 결과 ══ -->
+  <div class="slide" id="s7">
+    <div class="slide-header">
+      <div class="tag">Result</div>
+      <h2>V1.48, <span class="grad-text">드디어 배포</span></h2>
+    </div>
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-num grad-text">7,780개</div>
+        <div class="metric-label">매장 커버리지</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num grad-text-pink">7회</div>
+        <div class="metric-label">QA 진행</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-num grad-text-cyan">V1.48</div>
+        <div class="metric-label">최종 배포 버전</div>
+      </div>
+    </div>
+    <div class="example-cards">
+      <div class="ex">
+        <div class="ex-name grad-text">밍글스</div>
+        <div class="ex-text">
+          "국내 유일 3스타의 영예를 안은 모던 한식 다이닝<br>
+          고추장을 WAN 디저트로 풀어낸 '트리오'와<br>
+          최상급 재료의 맛을 살린 스테이크는 선호도가 높아요.<br>
+          채광이 차분한 공간에서 소믈리에가 엄선한 페어링을 더해보세요."
+        </div>
+      </div>
+      <div class="ex">
+        <div class="ex-name" style="background:var(--grad4);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">실제 서비스 화면</div>
+        <div class="screenshot-ph" onclick="openModal('result-screen')">
+          📷 스크린샷 자리 — 클릭
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ 슬라이드 8 — 마무리 ══ -->
+  <div class="slide" id="s8">
+    <div class="slide-header">
+      <div class="tag">Takeaway</div>
+      <h2>프롬프트 엔지니어링, <span class="grad-text">사실 별거 없었어요</span></h2>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <div class="card-num grad-text">01</div>
+        <div class="card-title">지침은 덜어내는 것</div>
+        <div class="card-desc">많을수록 좋은 게 아니다.<br>핵심만 남기는 편집이 실력이다.</div>
+      </div>
+      <div class="card">
+        <div class="card-num grad-text-pink">02</div>
+        <div class="card-title">예시 하나가 설명보다 강하다</div>
+        <div class="card-desc">Few-Shot으로 원하는 스타일을<br>직접 보여줘라.</div>
+      </div>
+      <div class="card">
+        <div class="card-num grad-text-cyan">03</div>
+        <div class="card-title">데이터가 답이다</div>
+        <div class="card-desc">있는 것만 쓰게 만들면<br>할루시네이션은 잡힌다.</div>
+      </div>
+    </div>
+    <div class="final-msg">
+      <p style="color:#94a3b8;font-size:15px;">저도 처음엔 몰랐어요.</p>
+      <p style="font-size:24px;font-weight:900;margin-top:8px;" class="grad-text">여러분도 할 수 있습니다.</p>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- 팝업 모달 -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p id="modal-body"></p>
+    <button class="close-btn" onclick="closeModal()">닫기</button>
+  </div>
+</div>
+
+<!-- 네비 -->
+<div class="nav">
+  <button onclick="go(-1)">&#8592;</button>
+  <span class="counter" id="counter">1 / 8</span>
+  <button onclick="go(1)">&#8594;</button>
+</div>
+
+<div class="dot-nav" id="dotNav"></div>
+<div class="key-hint">← → 키보드로 이동</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total  = slides.length;
+  let cur = 0;
+
+  // 도트 생성
+  const dotNav = document.getElementById('dotNav');
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.onclick = () => goTo(i);
+    dotNav.appendChild(d);
+  });
+
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    slides[cur].classList.add('exit-left');
+    setTimeout(() => slides[cur].classList.remove('exit-left'), 500);
+
+    cur = (n + total) % total;
+    slides[cur].classList.add('active');
+
+    document.getElementById('counter').textContent = `${cur + 1} / ${total}`;
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.classList.toggle('active', i === cur);
+    });
+  }
+
+  function go(dir) { goTo(cur + dir); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // ── 모달 콘텐츠 ──
+  const modalData = {
+    'before': {
+      title: '기존 — 매장 상세 화면',
+      body:  '📷 여기에 기존 매장상세 스크린샷을 넣어주세요.\n\n(HTML 파일에서 해당 모달의 body 텍스트를 이미지 태그로 교체하면 됩니다)'
+    },
+    'after': {
+      title: 'AI 요약 도입 후 — 매장 상세 화면',
+      body:  '📷 여기에 AI 요약이 적용된 실제 앱 스크린샷을 넣어주세요.'
+    },
+    'step1': {
+      title: 'ChatGPT / Gemini 웹 프롬프팅',
+      body:  '처음에는 웹 UI에서 직접 프롬프트를 입력하며 테스트했어요.\n\n매장 정보를 복사해 붙여넣고, 요약해달라고 요청하는 방식이었죠.\n결과물이 나오긴 했지만, 품질 기준이 없었고 매번 달랐어요.'
+    },
+    'step2': {
+      title: '40개 매장 AB테스트',
+      body:  '하이엔드 예약 / 중저가 예약 / 웨이팅 핫플 등 다양한 유형의 매장 40개를 선정해\n직접 작성한 요약문과 AI 생성 요약문을 나란히 비교했어요.\n\n선정 기준:\n• 인당 월방문 10 이상 제외 (어뷰징성)\n• 노출 Off 매장 제외\n• 프랜차이즈는 상위 1개 매장만'
+    },
+    'hallucination': {
+      title: '할루시네이션 사례',
+      body:  '웹 기반 프롬프팅에서 발견된 주요 할루시네이션 유형:\n\n• 실제로 없는 메뉴명을 지어냄\n• 수상하지 않은 상패를 붙여줌\n• 폐점한 분점 정보를 마치 현재인 것처럼 서술\n• 리뷰에 없는 분위기를 임의로 묘사\n\n→ 이를 극복하기 위해 내부 데이터 기반 RAG를 도입하게 됐어요.'
+    },
+    'result-screen': {
+      title: '실제 서비스 화면',
+      body:  '📷 현재 캐치테이블 앱/웹에서 확인할 수 있는 AI 요약 화면을 여기에 넣어주세요.\n\n검색 결과 화면 또는 매장상세 상단 화면 캡처를 권장합니다.'
+    }
+  };
+
+  function openModal(key) {
+    const d = modalData[key];
+    if (!d) return;
+    document.getElementById('modal-title').textContent = d.title;
+    document.getElementById('modal-body').innerHTML = d.body.replace(/\n/g, '<br>');
+    document.getElementById('modal').classList.add('show');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('show');
+  }
+  function closeModalOutside(e) {
+    if (e.target.id === 'modal') closeModal();
+  }
+</script>
+</body>
+</html>
