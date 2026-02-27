@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프롬프트 1도 몰랐던 PM의 AI 도전기</title>
+<meta name="description" content="할루시네이션 지옥을 헤쳐나온 좌충우돌 프롬프트 엔지니어링 이야기 - PM의 AI 도전기 발표자료">
+<meta property="og:title" content="프롬프트 1도 몰랐던 PM의 AI 도전기">
+<meta property="og:description" content="할루시네이션 지옥을 헤쳐나온 좌충우돌 프롬프트 엔지니어링 이야기">
+<meta property="og:type" content="website">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #0f0c29;
+    color: #f1f5f9;
+  }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 40px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(102,126,234,0.15), transparent 70%);
+    top: -100px; right: -100px;
+    border-radius: 50%;
+    animation: pulse 6s ease-in-out infinite;
+  }
+  .hero::after {
+    content: '';
+    position: absolute;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(240,147,251,0.12), transparent 70%);
+    bottom: -50px; left: -50px;
+    border-radius: 50%;
+    animation: pulse 6s ease-in-out infinite 3s;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+
+  .hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+  }
+
+  .tag {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #a78bfa;
+    margin-bottom: 24px;
+  }
+
+  h1 {
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 900;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  .grad-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .grad-text-pink {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    font-size: clamp(14px, 2vw, 18px);
+    color: #94a3b8;
+    line-height: 1.7;
+    margin-bottom: 40px;
+  }
+
+  .stats {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-num {
+    font-size: 32px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #64748b;
+  }
+
+  .cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 16px 40px;
+    border-radius: 50px;
+    transition: all 0.3s;
+    border: none;
+    cursor: pointer;
+  }
+
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(102,126,234,0.35);
+  }
+
+  .cta-arrow {
+    font-size: 20px;
+    transition: transform 0.3s;
+  }
+  .cta-btn:hover .cta-arrow {
+    transform: translateX(4px);
+  }
+
+  .sections {
+    padding: 80px 24px;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .section-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 36px 40px;
+    margin-bottom: 24px;
+    transition: all 0.3s;
+  }
+
+  .section-card:hover {
+    border-color: rgba(167,139,250,0.3);
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-2px);
+  }
+
+  .section-card h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .section-card p {
+    font-size: 15px;
+    color: #94a3b8;
+    line-height: 1.8;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+  }
+
+  .label-purple { background: rgba(167,139,250,0.2); color: #a78bfa; }
+  .label-pink   { background: rgba(240,147,251,0.2); color: #f0abfc; }
+  .label-cyan   { background: rgba(79,172,254,0.2); color: #60a5fa; }
+  .label-green  { background: rgba(67,233,123,0.2); color: #6ee7b7; }
+
+  .footer {
+    text-align: center;
+    padding: 48px 24px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    color: #475569;
+    font-size: 13px;
+  }
+
+  @media (max-width: 600px) {
+    .stats { gap: 24px; }
+    .stat-num { font-size: 24px; }
+    .section-card { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="tag">PM의 AI 도전기</div>
+    <h1>
+      프롬프트 <span class="grad-text">1도 몰랐던</span> PM이<br>
+      <span class="grad-text-pink">식당 요약문</span>을 만들기까지
+    </h1>
+    <p class="subtitle">
+      할루시네이션 지옥을 헤쳐나온 좌충우돌 프롬프트 엔지니어링 이야기
+    </p>
+    <div class="stats">
+      <div class="stat-item">
+        <span class="stat-num">V1.48</span>
+        <span class="stat-label">최종 배포 버전</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" style="background:linear-gradient(135deg,#f093fb,#f5576c);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">7회</span>
+        <span class="stat-label">QA 진행</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" style="background:linear-gradient(135deg,#43e97b,#38f9d7);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">7,780개</span>
+        <span class="stat-label">매장 커버리지</span>
+      </div>
+    </div>
+    <a href="presentation.html" class="cta-btn">
+      발표자료 보기 <span class="cta-arrow">&rarr;</span>
+    </a>
+  </div>
+</section>
+
+<section class="sections">
+  <div class="section-card">
+    <span class="section-label label-purple">Chapter 1</span>
+    <h3>처음엔 정말 아무것도 몰랐어요</h3>
+    <p>ChatGPT, Gemini 웹에서 이것저것 시도해보고, 40개 매장으로 AB테스트를 진행했어요. 결과는 할루시네이션 지옥이었습니다.</p>
+  </div>
+
+  <div class="section-card">
+    <span class="section-label label-cyan">극복 1</span>
+    <h3>지침을 짜다, 그리고 깎아냈다</h3>
+    <p>V1.0부터 V1.48까지, 지침을 계속 다듬었어요. 길수록 좋은 게 아니라 핵심만 남기는 편집이 프롬프트 실력이라는 걸 배웠습니다.</p>
+  </div>
+
+  <div class="section-card">
+    <span class="section-label label-pink">극복 2</span>
+    <h3>원하는 스타일을 예시로 직접 보여줬어요</h3>
+    <p>"이렇게 써줘"보다 "이런 느낌으로 써줘 + 예시"가 훨씬 강력했어요. Few-Shot Learning으로 캐치테이블 감성의 글을 만들어냈습니다.</p>
+  </div>
+
+  <div class="section-card">
+    <span class="section-label label-green">극복 3</span>
+    <h3>내부 데이터를 지침에 직접 연결했어요</h3>
+    <p>RAG를 도입해 실제 리뷰, 매장정보, 메뉴 데이터만 사용하도록 했어요. "있는 것만 써라" - 이 한 줄이 핵심이었습니다.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>프롬프트 1도 몰랐던 PM의 AI 도전기</p>
+</footer>
+
+</body>
+</html>
